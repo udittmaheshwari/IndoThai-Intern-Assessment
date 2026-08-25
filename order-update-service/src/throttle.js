@@ -30,7 +30,26 @@ export function startQueueDrainer(maxPerSecOverride) {
   const timer = setInterval(() => {
     if (queue.length > 0) {
       const event = queue.shift();
-      console.log(`sent: ${event.event_id}`);
+      const positionUrl= process.env.POSITION_SERVICE_URL || "http://localhost:5000"
+
+      fetch(`${positionUrl}/events`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(event)
+})
+.then(res => {
+  if (res.ok) {
+    console.log(`sent : ${event.event_id}`)
+  } else {
+   console.log(`delivery rejected: ${event.event_id} — HTTP ${res.status}`);
+  }
+})
+.catch(err => {
+  console.log(`delivery failed: ${event.event_id} — ${err.message} — cause: ${err.cause}`);
+});
+
+
+      
     } else if (isStreamFinished) {
       clearInterval(timer);
       console.log("all events sent");
