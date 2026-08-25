@@ -31,64 +31,47 @@ function validateEvent(rawRow) {
 
 
 
-function validateEvent(rawRow){
-    const {event_id , symbol,transaction_type ,quantity } = rawRow;
+export function validateEvent(rawRow = {}) {
+  const { event_id, symbol, transaction_type, quantity } = rawRow;
+  const errors = [];
 
-    const errors=[];
+  // Validate event_id
+  if (!event_id || typeof event_id !== 'string' || !event_id.trim()) {
+    errors.push("Missing or invalid 'event_id'.");
+  }
 
-    if(!event_id || typeof event_id!=='string' ||!event_id.trim() ){
-        if(!event_id || !event_id.trim()){
-        errors.push("Missing 'event_id'.")
-        }
-        else{
-            errors.push("Invalid 'event_id'.")
-        }
-    }
+  // Validate symbol (preserve case)
+  if (!symbol || typeof symbol !== 'string' || !symbol.trim()) {
+    errors.push("Missing or invalid 'symbol'.");
+  }
 
-    if(!symbol || !symbol.trim() || typeof symbol!=='string'){
-         if(!symbol || !symbol.trim()){
-        errors.push("Missing 'symbol'.")
-        }
-        else{
-            errors.push("Invalid 'symbol' .")
-        }
-    }
+  // Validate transaction_type
+  const validTypes = ['BUY', 'SELL'];
+  if (!transaction_type || !validTypes.includes(transaction_type)) {
+    errors.push(`Invalid 'transaction_type'. Expected BUY or SELL, got '${transaction_type}'.`);
+  }
 
+  // Validate quantity: strictly positive integer string
+  if (typeof quantity !== 'string' || !/^[1-9]\d*$/.test(quantity.trim())) {
+    errors.push(`Invalid 'quantity'. Expected a positive whole number, got '${quantity}'.`);
+  }
 
-
-
-    const ValidTypes=['BUY','SELL'];
-
-    if(!transaction_type || !ValidTypes.includes(transaction_type)){
-        errors.push(`Invalid 'transaction_type'. Expected BUY or SELL, got '${transaction_type}'.`)
-    }
-
-    if(!(typeof quantity === 'string' && /^[1-9]\d*$/.test(quantity.trim()))){
-        errors.push(`Invalid 'quantity'. Expected a positive whole number, got '${quantity}'.`);
-    }
-
-    if (errors.length > 0) {
-        return {
-            valid: false,
-            reason: errors.join(" ")
-        };
-    }
-
+  if (errors.length > 0) {
     return {
-        valid: true,
-        event: {
-            event_id: event_id.trim(),
-            symbol: symbol, // exact case preserved
-            transaction_type: transaction_type,
-            quantity: Number(quantity) // parsed to integer
-        }
+      valid: false,
+      reason: errors.join(" "),
+      event_id: event_id ? String(event_id).trim() : 'UNKNOWN'
     };
+  }
+
+  return {
+    valid: true,
+    event: {
+      event_id: event_id.trim(),
+      symbol: symbol, // exact case preserved
+      transaction_type: transaction_type,
+      quantity: Number(quantity) // parsed to integer
+    }
+  };
 }
-
-
-
-
-module.exports = { validateEvent };
-
-
 

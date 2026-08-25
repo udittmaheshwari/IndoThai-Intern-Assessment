@@ -25,53 +25,59 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-// Configurable path with fallback requirement: process.env.CSV_FILE_PATH || './order_updates.csv'
-const rawFilePath = process.env.CSV_FILE_PATH || './order_updates.csv';
-const fullPath = path.resolve(__dirname, '..', rawFilePath);
+/**
+ * Async generator that reads the CSV file line-by-line 
+ * and yields parsed row objects.
+ */
+export async function* readCsvRows(overridePath) {
+  // 2) Configurable path (env var with fallback)
+  const rawFilePath = overridePath || process.env.CSV_FILE_PATH || './order_updates.csv';
+  const fullPath = path.resolve(__dirname, '..', rawFilePath);
 
-// 1. Open readable stream over file
-const fileStream = fs.createReadStream(fullPath);
+  // 1. Open readable stream
+  const fileStream = fs.createReadStream(fullPath);
 
-// Gracefully handle file-not-found / missing path errors without crashing
-fileStream.on('error', (err) => {
-  console.error(`[Error] Unable to open CSV file at "${fullPath}":`, err.message);
-});
+  // 3) Gracefully handle missing/invalid path errors
+  let hasError = false;
+  fileStream.on('error', (err) => {
+    hasError = true;
+    console.error(`[Error] Unable to open CSV file at "${fullPath}":`, err.message);
+  });
 
-// 2. Open readline interface over fs.createReadStream
-const rl = readline.createInterface({
-  input: fileStream,
-  crlfDelay: Infinity // Handles \r\n line breaks correctly
-});
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
 
-let isHeader = true;
+  let isHeader = true;
 
-// Process line by line incrementally
-rl.on('line', (line) => {
-  const trimmed = line.trim();
-  if (!trimmed) return; // Skip empty lines
+  // Stream each line using for-await-of over readline
+  for await (const line of rl) {
+    if (hasError){
+      throw new Error(`Failed to read CSV file`);
+    }
 
-  // Requirement: Skip header (first line)
-  if (isHeader) {
-    isHeader = false;
-    return;
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // 1) Skip header line
+    if (isHeader) {
+      isHeader = false;
+      continue;
+    }
+
+    // Split fields and map to row object
+    const [event_id, symbol, transaction_type, quantity] = trimmed.split(',');
+
+    const row = {
+      event_id: event_id?.trim(),
+      symbol: symbol?.trim(),
+      transaction_type: transaction_type?.trim(),
+      quantity: quantity?.trim()
+    };
+
+    // Yield each object to index.js incrementally
+    yield row;
   }
 
-  // Requirement: Split into fields
-  const [event_id, symbol, transaction_type, quantity] = trimmed.split(',');
-
-  // Requirement: Build raw row object
-  const row = {
-    event_id: event_id?.trim(),
-    symbol: symbol?.trim(),
-    transaction_type: transaction_type?.trim(),
-    quantity: quantity?.trim()
-  };
-
-  // Requirement: Console log raw row object
-  console.log(row);
-});
-
-// Requirement: Log required message when stream ends
-rl.on('close', () => {
-  console.log("input processing complete");
-});
+}
