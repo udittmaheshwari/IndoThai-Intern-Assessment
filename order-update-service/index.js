@@ -27,7 +27,8 @@ Things to do :
 
 */
 
-
+import path from "path";
+import { fileURLToPath } from "url";
 import { readCsvRows } from "./src/readCsv.js";
 import { validateEvent } from "./src/validateEvent.js";
 import { enqueueEvent, startQueueDrainer, markStreamComplete } from "./src/throttle.js";
@@ -63,7 +64,10 @@ export const readStream = async (overridePath) => {
 };
 
 // Start execution if run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const currentFilePath = fileURLToPath(import.meta.url);
+const entryFilePath = path.resolve(process.argv[1]);
+
+if (currentFilePath === entryFilePath) {
   startQueueDrainer();
   await readStream();
 }
