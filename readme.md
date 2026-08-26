@@ -78,7 +78,7 @@ Service A will read the CSV, validate and throttle events, and send them to Serv
 | `POSITION_SERVICE_URL`  | Order Update           | `http://localhost:5000` | Base URL of Service B                         |
 | `PORT`                  | Position Maintaining   | `3000`                   | Port Service B listens on                     |
 
-> **Note:** the default `POSITION_SERVICE_URL` (`5000`) and default `PORT` (`3000`) do not match out of the box. When running both services with no `.env` files, set at least one of these explicitly so Service A points at the correct port for Service B.
+
 
 ---
 
