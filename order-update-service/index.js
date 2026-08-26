@@ -32,29 +32,38 @@ import { readCsvRows } from "./src/readCsv.js";
 import { validateEvent } from "./src/validateEvent.js";
 import { enqueueEvent, startQueueDrainer, markStreamComplete } from "./src/throttle.js";
 
-const readStream = async () => {
-    try {
-         for await (const row of readCsvRows()) {
-    const final_row = validateEvent(row);
+/**
+ * Orchestrates a single raw row: validates, enqueues on success, 
+ * logs the outcome, and returns the execution result.
+ */
+export function processRow(row) {
+  const final_row = validateEvent(row);
 
-    if (final_row.valid) {
-      enqueueEvent(final_row.event);
-      console.log(`accepted: ${final_row.event.event_id}`);
-    } else {
-      console.log(`rejected: ${final_row.event_id} — reason: ${final_row.reason}`);
-    }
+  if (final_row.valid) {
+    enqueueEvent(final_row.event);
+    console.log(`accepted: ${final_row.event.event_id}`);
+    return { status: 'accepted', event: final_row.event };
+  } else {
+    console.log(`rejected: ${final_row.event_id} — reason: ${final_row.reason}`);
+    return { status: 'rejected', event_id: final_row.event_id, reason: final_row.reason };
   }
+}
 
-  // Stream reading is complete
-  console.log("input processing complete"); 
-    } catch (err) {
-        console.log("input processing failed: " + err.message)
+export const readStream = async (overridePath) => {
+  try {
+    for await (const row of readCsvRows(overridePath)) {
+      processRow(row);
     }
-  markStreamComplete();
+    console.log("input processing complete");
+  } catch (err) {
+    console.log("input processing failed: " + err.message);
+  } finally {
+    markStreamComplete();
+  }
 };
 
-// Start the queue drainer interval immediately
-startQueueDrainer();
-
-// Begin processing the CSV stream
-await readStream(); 
+// Start execution if run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startQueueDrainer();
+  await readStream();
+}

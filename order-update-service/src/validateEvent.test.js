@@ -1,4 +1,4 @@
-const { validateEvent } = require('./validateEvent.js');
+import { validateEvent } from './validateEvent.js';
 
 describe('validateEvent()', () => {
 
@@ -59,7 +59,7 @@ describe('validateEvent()', () => {
       const result = validateEvent(input);
 
       expect(result.valid).toBe(false);
-      expect(result.reason).toContain("Missing 'event_id'.");
+      expect(result.reason).toContain("Missing or invalid 'event_id'.");
     });
   });
 
@@ -70,7 +70,7 @@ describe('validateEvent()', () => {
       const result = validateEvent(input);
 
       expect(result.valid).toBe(false);
-      expect(result.reason).toContain("Missing 'symbol'.");
+      expect(result.reason).toContain("Missing or invalid 'symbol'.");
     });
   });
 
