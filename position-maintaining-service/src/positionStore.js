@@ -17,6 +17,25 @@ export function createPositionStore() {
   const positionMap = {};
 
   const applyEvent = (event) => {
+
+    if (!event || typeof event !== 'object') {
+  return { applied: false, reason: 'Event payload missing or invalid.' };
+}
+if (!event.event_id || typeof event.event_id !== 'string') {
+  return { applied: false, reason: 'Missing or invalid event_id.' };
+}
+if (event.transaction_type !== 'BUY' && event.transaction_type !== 'SELL') {
+  return { applied: false, reason: 'Invalid transaction_type.' };
+}
+if (typeof event.quantity !== 'number' || !Number.isInteger(event.quantity) || event.quantity <= 0) {
+  return { applied: false, reason: 'Invalid quantity.' };
+}
+if (!event.symbol || typeof event.symbol !== 'string') {
+  return { applied: false, reason: 'Missing or invalid symbol.' };
+}
+
+
+
     const { event_id, symbol, transaction_type, quantity } = event;
 
     if (seenEventIds.has(event_id)) {

@@ -49,6 +49,16 @@ app.get("/position", (req, res) => {
   return res.status(200).json(positions);
 });
 
+
+   app.use((err, req, res, next) => {
+     console.error('Unhandled error:', err.message);
+     res.status(400).json({ error: 'Invalid request body' });
+   });
+
+
+
+
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
